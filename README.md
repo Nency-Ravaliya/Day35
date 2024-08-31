@@ -1,4 +1,139 @@
-# Day35
+# Deploying a Multi-Tier Application Using Helm on Kubernetes and AWS Free Tier Services
+
+This project demonstrates the deployment of a multi-tier application using Helm on Minikube, integrated with AWS free-tier services such as S3 for storage and RDS (MySQL) for the database. The focus is on Helm chart management, secrets, RBAC, and cloud resource management.
+
+## Prerequisites
+- Minikube installed and running.
+- Helm installed on the local machine.
+- AWS account with S3 and RDS services.
+- kubectl configured to interact with your Kubernetes cluster.
+
+## Project Objectives
+- Deploy a multi-tier application using Helm on Minikube.
+- Integrate AWS free-tier services (S3 and RDS).
+- Manage Helm charts, including versioning, packaging, and rollbacks.
+- Implement Helm secrets management and RBAC.
+- Handle dependencies between different components of the application.
+
+## Project Deliverables
+
+### 1. Setup Helm and Minikube
+- Ensure Minikube is running.
+
+- Install and configure Helm on the local machine:
+  ```bash
+  curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  helm repo add stable https://charts.helm.sh/stable
+  helm repo update
+  ```
+  
+### 2. AWS Services Setup
+S3 Bucket: Create an S3 bucket for storing application assets (e.g., static files for the frontend).
+RDS Instance: Set up an Amazon RDS MySQL instance in the free tier.
+
+### 3. Create Helm Charts
+Frontend Chart: Create a Helm chart for a frontend service (e.g., NGINX) that pulls static files from the S3 bucket:
+
+`helm create frontend`
+
+Backend Chart: Create a Helm chart for a backend service (e.g., a Python Flask API) that connects to the RDS MySQL database:
+`helm create backend`
+
+### 4. Package Helm Charts
+Package each Helm chart into a .tgz file:
+
+```
+helm package frontend
+helm package backend
+```
+
+Ensure charts are properly versioned.
+
+### 5. Deploy Multi-Tier Application Using Helm
+Deploy the database chart (connected to the RDS instance).
+
+Deploy the backend chart with a dependency on the database chart:
+
+`helm install backend backend-1.1.0.tgz`
+
+Deploy the frontend chart with a dependency on the backend service, ensuring it pulls assets from the S3 bucket:
+
+`helm install frontend frontend-1.1.0.tgz`
+
+###  Implement RBAC
+Define RBAC roles and role bindings to manage permissions for Helm deployments:
+
+```
+kubectl apply -f helm-service-account.yaml
+kubectl apply -f helm-Role.yaml
+kubectl apply -f helm-rolebinding.yaml
+```
+
+Ensure that only authorized users can deploy or modify the Helm releases:
+
+`kubectl auth can-i get pods --as system:serviceaccount:default:helm-service-account`
+
+Versioning and Rollback
+Update the version of one of the Helm charts (e.g., update the frontend service):
+
+```
+image:
+  repository: <image>
+  pullPolicy: IfNotPresent
+  tag: <tag>  # changed the image version from 3 to 4
+```
+Upgrade the cluster using the following command:
+
+```
+helm package frontend
+helm upgrade frontend frontend-1.1.1.tgz
+```
+
+Verify the new version of the frontend service:
+
+```
+helm history frontend
+```
+
+Perform a rollback if necessary and validate the application functionality:
+
+```
+helm rollback frontend 1
+helm history frontend
+```
+
+### Validate Deployment
+
+Ensure the frontend service is serving files from the S3 bucket:
+
+```
+kubectl port-forward service/frontend 8085:80
+```
+
+Validate that the backend service is successfully communicating with the RDS MySQL database.
+
+Test the overall functionality of the deployed application:
+
+```
+kubectl get pods
+kubectl get services
+kubectl get deployments
+```
+
+### Cleanup
+Delete all Helm releases and Kubernetes resources created during the project:
+
+```
+helm uninstall frontend
+helm uninstall backend
+```
+
+Terminate the RDS instance and delete the S3 bucket.
+
+Stop Minikube if no longer needed.
+
+
+# Output
 
 ![image](https://github.com/user-attachments/assets/de515cd0-cfde-47fe-a52b-f45d42f706c8)
 ![image](https://github.com/user-attachments/assets/f35c1aaf-5891-427b-a04b-c4afe308f99d)
