@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend.fullname" . }}
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "backend.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: db_host
+            - name: DB_PORT
+              value: {{ .Values.mysql.port | quote }}
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: db_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: db_password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
